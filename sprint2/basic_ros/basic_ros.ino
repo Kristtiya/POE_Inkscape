@@ -1,10 +1,6 @@
-/*
- * rosserial Publisher Example
- * Prints "hello world!"
- */
-
 #include <ros.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/String.h>
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
@@ -17,7 +13,7 @@ ros::NodeHandle  nh;
 int Mspeed = 30;
 
 void messageCb( const std_msgs::Int8& mspeed){
-  Mspeed = mspeed->data;
+  Mspeed = mspeed.data;
 }
 
 std_msgs::String str_msg;
