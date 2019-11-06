@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt    
 
 def get_edges(img):
     edges = cv2.Canny(img, 100, 200)
@@ -29,7 +29,7 @@ def get_white(edges):
         for j in range(0, len(edges[i])):
             if edges[i][j] == 255:
                 white.append([i, j])
-    
+
     return np.array(white)
 
 def distance(point):
