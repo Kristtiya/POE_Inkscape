@@ -54,14 +54,36 @@ class Planner():
         combined = np.transpose(np.vstack((distances, indices)))
         sorted_pts = combined[combined[:, 0].argsort()]
         sorted_indeces = sorted_pts[:, 1].tolist()
-        points = [white[int(idx)] for idx in sorted_indeces]
+        self.points = [to_polar(white[int(idx)]) for idx in sorted_indeces]
 
-        return points
+        return self.points
+
+    def get_vectors(self):
+        self.points.insert(0, np.asarray([0, 0]))
+        vectors = []
+        for i in range(1, len(self.points)-1):
+            curr_pt = np.asarray(self.points[i])
+            prev_pt = np.asarray(self.points[i-1])
+            vector = curr_pt-prev_pt
+            vectors.append(vector)
+
+        return vectors
+
+def to_meter(pixel):
+    return 	0.0002645833*pixel
 
 
 def distance(point):
     return np.sqrt(point[0]**2+point[1]**2)
 
+def to_polar(point):
+    x = point[0]
+    y = point[1]
+
+    r = to_meter(np.sqrt(x**2+y**2))
+    theta = np.arctan2(y, x)
+
+    return [r, theta]
 
 def talker(points):
     pub = rospy.Publisher('chatter', String, queue_size=10)
@@ -79,8 +101,13 @@ def talker(points):
 if __name__ == '__main__':
     planner = Planner('circle.png')
     points = planner.points
+    for i in range(0, 20):
+        print(points[i])
 
-    try:
-        talker(points)
-    except rospy.ROSInterruptException:
-        pass
+    vecs = planner.get_vectors()
+    for i in range(0, 20):
+        print(vecs[i])
+    # try:
+    #     talker(points)
+    # except rospy.ROSInterruptException:
+    #     pass
