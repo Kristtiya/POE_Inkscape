@@ -16,26 +16,22 @@ void messageCb( const std_msgs::Int8& mspeed){
   Mspeed = mspeed.data;
 }
 
-std_msgs::String str_msg;
-ros::Publisher chatter("chatter", &str_msg);
 ros::Subscriber<std_msgs::Int8> sub("/motor_speed", &messageCb );
-
-char hello[13] = "hello world!";
+char info[16];
 
 void setup()
 {
   AFMS.begin();
   nh.initNode();
-  nh.advertise(chatter);
 }
 
 void loop()
 {
-  str_msg.data = hello;
-  chatter.publish( &str_msg );
   nh.spinOnce();
   setMotorSpeed(Mspeed, Mspeed);
   forwardMotion();
+  itoa(Mspeed, info, 10);
+  nh.loginfo(info);
   delay(1000);
 }
 
