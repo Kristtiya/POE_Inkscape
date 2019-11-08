@@ -40,8 +40,8 @@ void loop() {
 
     float LCalc = V-w*d/2;
     float RCalc = V+w*d/2;
-    LSpeed = int((LCalc/10)*255);
-    RSpeed = int((RCalc/10)*255);
+    LSpeed = int((LCalc/0.25)*255);
+    RSpeed = int((RCalc/0.25)*255);
   }
 
   setMotorSpeed(RSpeed, LSpeed);
