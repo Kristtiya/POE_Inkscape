@@ -8,7 +8,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 catkin_package(CATKIN_DEPENDS ${CATKIN_DEPS})
 
-add_executable(speed_pub src/speed_pub.cpp)
+add_executable(speed_pub src/dummy/speed_pub.cpp)
 target_link_libraries(speed_pub ${catkin_LIBRARIES})
 add_dependencies(speed_pub ${test_foo_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
