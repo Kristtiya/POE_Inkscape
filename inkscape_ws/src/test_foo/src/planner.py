@@ -16,7 +16,6 @@ class Planner():
         img = cv2.bitwise_not(img)
         edges = self.get_edges(img)
         white_edges = self.get_white(img)
-        self.display(edges, img)
         pts = self.sort_points(white_edges)
 
         return pts
@@ -88,7 +87,7 @@ def to_polar(point):
     return [r, theta]
 
 def talker(points):
-    pub = rospy.Publisher('/curr_pos/robot1', String, queue_size=10)
+    pub = rospy.Publisher('des_pos', String, queue_size=10)
     rospy.init_node('planner', anonymous=True)
     rate = rospy.Rate(10) # 10hz
     idx = 0
@@ -101,7 +100,8 @@ def talker(points):
         idx += 1
 
 if __name__ == '__main__':
-    planner = Planner('circle.png')
+    planner = Planner('/home/shreya/POE_Inkscape/inkscape_ws/src/test_foo/src/circle.png')
+    points = planner.points
 
     # points = planner.points
     # for i in range(0, 20):
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # vecs = planner.get_vectors()
     # for i in range(0, 20):
     #     print(vecs[i])
-    # try:
-    #     talker(points)
-    # except rospy.ROSInterruptException:
-    #     pass
+    try:
+        talker(points)
+    except rospy.ROSInterruptException:
+        pass
