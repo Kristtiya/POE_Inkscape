@@ -1,2 +1,0 @@
-test_foo
--DCATKIN_DEVEL_PREFIX=/home/shreya/POE_Inkscape/inkscape_ws/devel -DCMAKE_INSTALL_PREFIX=/home/shreya/POE_Inkscape/inkscape_ws/install -G Unix Makefiles

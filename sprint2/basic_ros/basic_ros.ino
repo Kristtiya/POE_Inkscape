@@ -11,32 +11,36 @@ ros::NodeHandle  nh;
 
 // initialize variable for the motor speed
 int Mspeed = 30;
+int temp = 0;
+char info[16] = "";
 
 void messageCb( const std_msgs::Int8& mspeed){
-  Mspeed = mspeed.data;
+  temp = mspeed.data;
+  itoa(temp, info, 10);
+  nh.loginfo(info);
+  Mspeed = temp;
 }
 
-std_msgs::String str_msg;
-ros::Publisher chatter("chatter", &str_msg);
 ros::Subscriber<std_msgs::Int8> sub("/motor_speed", &messageCb );
-
-char hello[13] = "hello world!";
+std_msgs::String recv_msg;
+ros::Publisher chatter("/recv_m_speed", &recv_msg);
 
 void setup()
 {
   AFMS.begin();
   nh.initNode();
   nh.advertise(chatter);
+  nh.subscribe(sub);
 }
 
 void loop()
 {
-  str_msg.data = hello;
-  chatter.publish( &str_msg );
-  nh.spinOnce();
   setMotorSpeed(Mspeed, Mspeed);
   forwardMotion();
-  delay(1000);
+  recv_msg.data = info;
+  chatter.publish( &recv_msg );
+  nh.spinOnce();
+  delay(50);
 }
 
 /// set motor speeds with the parameter
