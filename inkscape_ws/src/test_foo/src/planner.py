@@ -9,12 +9,14 @@ from std_msgs.msg import String
 class Planner():
     def __init__(self, filename):
         self.points = self.img_to_points(filename)
+        self.img = cv2.imread(filename, 0)
 
     def img_to_points(self, filename):
         img = cv2.imread(filename, 0)
         img = cv2.bitwise_not(img)
         edges = self.get_edges(img)
         white_edges = self.get_white(img)
+        self.display(edges, img)
         pts = self.sort_points(white_edges)
 
         return pts
@@ -86,8 +88,8 @@ def to_polar(point):
     return [r, theta]
 
 def talker(points):
-    pub = rospy.Publisher('chatter', String, queue_size=10)
-    rospy.init_node('talker', anonymous=True)
+    pub = rospy.Publisher('/curr_pos/robot1', String, queue_size=10)
+    rospy.init_node('planner', anonymous=True)
     rate = rospy.Rate(10) # 10hz
     idx = 0
     while not rospy.is_shutdown() and idx < len(points):
@@ -100,13 +102,14 @@ def talker(points):
 
 if __name__ == '__main__':
     planner = Planner('circle.png')
-    points = planner.points
-    for i in range(0, 20):
-        print(points[i])
 
-    vecs = planner.get_vectors()
-    for i in range(0, 20):
-        print(vecs[i])
+    # points = planner.points
+    # for i in range(0, 20):
+    #     print(points[i])
+    #
+    # vecs = planner.get_vectors()
+    # for i in range(0, 20):
+    #     print(vecs[i])
     # try:
     #     talker(points)
     # except rospy.ROSInterruptException:
