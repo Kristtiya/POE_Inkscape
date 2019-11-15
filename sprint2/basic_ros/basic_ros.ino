@@ -1,50 +1,37 @@
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
-#include <Wire.h>
-#include <Adafruit_MotorShield.h>
-Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-Adafruit_DCMotor *rightMotor = AFMS.getMotor(2); // Right Motor
-Adafruit_DCMotor *leftMotor = AFMS.getMotor(1); // Left Motor
+#include <std_msgs/Int32MultiArray.h>
 
 ros::NodeHandle  nh;
 
 // initialize variable for the motor speed
-int V = 30;
-int w = 1;
-int temp = 0;
-char info[16] = "";
+int speeds[2] = {0,0};
+long enc_data[3] = {0,0,0};
 
 void ctrlsCb( const geometry_msgs::Twist& mspeed){
-  V = mspeed.linear.x;
-  w = mspeed.angular.z;
+  speeds[0] = mspeed.linear.x;
+  speeds[1] = mspeed.angular.z;
 }
 
-void ctrlsCb( const geometry_msgs::Twist& mspeed){
-  V = mspeed.linear.x;
-  w = mspeed.angular.z;
-}
-
-ros::Subscriber<geometry_msgs::Twist> sub("/motor_ctrls/robot1", &ctrlsCb );
-ros::Subscriber<geometry_msgs::Twist> sub("/motor_ctrls/robot1", &flagsCb );
-geometry_msgs::Twist recv_msg;
-ros::Publisher chatter("/recv_m_speed", &recv_msg);
+ros::Subscriber<geometry_msgs::Twist> ctrlSub("/motor_ctrls/robot1", &ctrlsCb );
+std_msgs::Int32MultiArray recv_msg;
+ros::Publisher encoder_pub("/encoder_data/robot1", &recv_msg);
 
 void setup()
 {
-  AFMS.begin();
   nh.initNode();
-  nh.advertise(chatter);
-  nh.subscribe(sub);
+  nh.advertise(encoder_pub);
+  nh.subscribe(ctrlSub);
 }
 
 void loop()
 {
-  recv_msg.linear.x = V;
-  recv_msg.angular.z = w;
-  chatter.publish( &recv_msg );
-  temp = V;
-  itoa(temp, info, 10);
-  nh.loginfo(info);
+  enc_data[0] = 0;
+  enc_data[1] = 0;
+  enc_data[2] = millis();
+  recv_msg.data = enc_data;
+  recv_msg.data_length = 3;
+  encoder_pub.publish( &recv_msg );
   nh.spinOnce();
   delay(50);
 }
