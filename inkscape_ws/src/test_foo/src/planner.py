@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import Int32MultiArray
 
 class Planner():
     def __init__(self, filename):

@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import Int32MultiArray
 
 def distance(point):
     return np.sqrt(point[0]**2+point[1]**2)
@@ -47,11 +47,20 @@ def talker(points):
         rospy.loginfo(point_str)
         pub.publish(point_str)
         rate.sleep()
-
         idx += 1
 
-if __name__ == "__main__":
+def send_points(points):
+    pub = rospy.Publisher('des_pos', Int32MultiArray, queue_size=10)
+    rospy.init_node('planner', anonymous=True)
+    rate = rospy.Rate(10)
+    idx = 0
+    while not rospy.is_shutdown() and idx < len(points):
+        point = points[idx]
+        msg_array = Int32MultiArray(data=[point[0], point[1]])
+        pub.publish(msg_array)
+        rate.sleep()
 
+if __name__ == "__main__":
     # Read raw image
     raw_img = cv2.bitwise_not(cv2.imread('/home/shreya/POE_Inkscape/inkscape_ws/src/test_foo/src/circle.png', 0))
     # plt.imshow(raw_img, cmap='gray')
@@ -74,3 +83,6 @@ if __name__ == "__main__":
 
     plt.legend(["Edges", "Sorted"])
     plt.show()
+
+    sorted = np.column_stack((sorted_x, sorted_y))
+    send_points(sorted)
