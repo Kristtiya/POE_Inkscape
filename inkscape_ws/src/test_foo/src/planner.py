@@ -73,7 +73,6 @@ class Planner():
 def to_meter(pixel):
     return 	0.0002645833*pixel
 
-
 def distance(point):
     return np.sqrt(point[0]**2+point[1]**2)
 
@@ -102,15 +101,16 @@ def talker(points):
 if __name__ == '__main__':
     planner = Planner('/home/shreya/POE_Inkscape/inkscape_ws/src/test_foo/src/circle.png')
     points = planner.points
-
-    # points = planner.points
     # for i in range(0, 20):
     #     print(points[i])
-    #
-    # vecs = planner.get_vectors()
-    # for i in range(0, 20):
+
+    vecs = planner.get_vectors()
+    # for i in range(0, len(vecs), 10):
     #     print(vecs[i])
-    try:
-        talker(points)
-    except rospy.ROSInterruptException:
-        pass
+
+    plt.plot(points, '*')
+    plt.show()
+    # try:
+    #     talker(points)
+    # except rospy.ROSInterruptException:
+    #     pass
