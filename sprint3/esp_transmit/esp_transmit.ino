@@ -23,7 +23,7 @@ static byte ndx = 0;
 char rc;
 char endMarker = '>';
 unsigned long timeout = millis();
-//bool zoops = false;
+bool zoops = false;
 
 void setup() {
   Serial.begin(115200);
@@ -66,8 +66,14 @@ void pushServer() {
     return;
   }
 
-  c.print(serialData);
-  c.println(">");
+  if (zoops) {
+    c.print(serialData);
+    c.print(">");
+  }
+  else {
+    c.print(clientData);
+    c.print(">");
+  }
 
   timeout = millis();
   if (c.connected()) {
@@ -104,11 +110,12 @@ void pushServer() {
 
 void pushSerial() {
   Serial.print(clientData);
-  Serial.println(">");
+  Serial.print(">");
 
   timeout = millis();
   while (Serial.available() == 0) {
     if (millis() - timeout > 1000) {
+      zoops = false;
       return;
     }
   }
@@ -125,9 +132,12 @@ void pushSerial() {
     else {
       serialData[ndx] = '\0'; // terminate the string
       ndx = 0;
+      zoops = true;
       return;
     }
   }
+
+  zoops = true;
 
   serialData[ndx] = '\0'; // terminate the string
   ndx = 0;
