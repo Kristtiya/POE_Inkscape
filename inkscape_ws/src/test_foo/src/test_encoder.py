@@ -4,23 +4,24 @@ import rospy
 from std_msgs.msg import Int32MultiArray
 
 def talker():
-    x = 1
-    y = 1
+    right = 0
+    left = 0
     t = 0
 
-    dx = 1
-    dy = 2
+    dright = 5
+    dleft = 5
     dt = 1
+
     rospy.init_node('encoder_data', anonymous=True)
     pub = rospy.Publisher('encoder_data/robot1', Int32MultiArray, queue_size=10)
     rate = rospy.Rate(10) # 10hz
     while not rospy.is_shutdown():
-        msg_array = Int32MultiArray(data=[x, y, t])
+        msg_array = Int32MultiArray(data=[right, left, t])
         pub.publish(msg_array)
         rate.sleep()
 
-        x += dx
-        y += dy
+        right += dright
+        left += dleft
         t += dt
 
 if __name__ == '__main__':
