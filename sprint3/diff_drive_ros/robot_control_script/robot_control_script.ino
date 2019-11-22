@@ -46,6 +46,8 @@ const static int KD = 0;
 AutoPID left_pid(&left_val, &left_setpoint, &left_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 AutoPID right_pid(&right_val, &right_setpoint, &right_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
+
+
 void setup() {
   // sets starting encoder position to zero
   left_enc.write(0);
@@ -76,8 +78,16 @@ void loop() {
   set_motor(rm1, rm2, 20);
 }
 
+
+
 void go_to_pos(float lm, float rm) {
-  left_setpoint = lm;
+  /* 
+   * Pass in desired encoder values and motors will go until position is hit
+   * 
+   * lm: float which contains desired left wheel position
+   * rm: float which contains desired right wheel position
+   */
+  left_setpoint = lm;  // updates setpoint in PID object
   right_setpoint = rm;
 
   while (true) {
@@ -96,6 +106,11 @@ void go_to_pos(float lm, float rm) {
 }
 
 void read_encoder(Encoder encoder) { 
+  /*
+   * Reads encoder value and converts it to position in mm
+   * 
+   * encoder: Encoder object to read values from
+   */
   float value = encoder.read();
 
   // converts encoder value to mm
