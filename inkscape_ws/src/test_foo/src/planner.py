@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import rospy
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import String
 from connect import Connect
 
 class Planner():
@@ -27,12 +27,12 @@ class Planner():
     def run(self, rate):
         r = rospy.Rate(rate) # 10hz
         while not rospy.is_shutdown():
-            des_pos = self.xy[state[0]]
+            des_pos = self.xy[self.state[0]]
             if self._rel_dist(self.curr_pos, des_pos) < self.threshold:
                 self.state[0] = self.state[0] + 1
                 if self.state[0] >= self.xy.shape[0]:
                     self.state[0] = self.state[0] - 1
-                des_pos = self.xy[state[0]]
+                des_pos = self.xy[self.state[0]]
             if des_pos[2] == self.state[1]:
                 new_point = 0
             else:
@@ -40,7 +40,7 @@ class Planner():
                 self.state[1] = des_pos[2]
             pos = ','.join(list(map(str,[des_pos[0],des_pos[1],new_point])))
             self.pub.publish(pos)
-            rate.sleep()
+            r.sleep()
 
     def _img_to_points(self, filename):
         img = cv2.imread(filename, 0)

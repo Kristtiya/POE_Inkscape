@@ -4,8 +4,8 @@
 
  <node pkg="test_foo" type="decoder.py" name="decs" output="screen"> </node>
  <node pkg="test_foo" type="encoder.py" name="encs"> </node>
- <!-- <node pkg="test_foo" type="planner.py" name="planner"> </node> -->
+ <node pkg="test_foo" type="planner.py" name="planner"> </node>
  <node pkg="test_foo" type="test_encoder.py" name="test_encoder"> </node>
- <node pkg="test_foo" type="talker.py" name="plans"> </node>
+ <!-- <node pkg="test_foo" type="talker.py" name="plans"> </node> -->
  <node pkg="turtlesim" type="turtlesim_node" name="turtle_boy"> </node>
 </launch>

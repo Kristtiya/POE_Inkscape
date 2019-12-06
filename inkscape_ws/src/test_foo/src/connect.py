@@ -1,8 +1,4 @@
-#!/usr/bin/env python
-
 import numpy as np
-# import cv2
-import matplotlib.pyplot as plt
 
 class Connect:
     def __init__(self, img):
