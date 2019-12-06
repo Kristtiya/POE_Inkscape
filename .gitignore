@@ -1,2 +1,3 @@
 inkscape_ws/build/*
 inkscape_ws/devel/*
+*.pyc
