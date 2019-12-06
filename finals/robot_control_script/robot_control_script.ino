@@ -3,21 +3,17 @@
 #include <AutoPID.h>
 
 // MOTOR DEFINITIONS
-const static int LEFTM1 = 10; // left motor input 1
-const static int LEFTM2 = 11; // left motor input 2
-const static int RIGHTM1 = 12; // right motor input 1
-const static int RIGHTM2 = 13; // right motor input 2
-Servo lm1;
-Servo lm2;
-Servo rm1;
-Servo rm2;
+const static int LEFTDIR = 10; // left motor input 1
+const static int LEFTPWM = 12; // left motor input 2
+const static int RIGHTDIR = 7; // right motor input 1
+const static int RIGHTPWM = 8; // right motor input 2
 
 // WHEEL DEFINITIONS
 const static int RADIUS = 40; // RADIUS in mm
 const static int CIRCUMFERENCE = RADIUS*2*PI; // wheel CIRCUMFERENCE
 
 // ENCODER DEFINITIONS
-const static int NUMPERREV = 2568;
+const static int NUMPERREV = 2560;
 
 const static int LEFTE1 = 2; // left encoder 1
 const static int LEFTE2 = 4; // left encoder 2
@@ -36,46 +32,44 @@ Servo myServo;
 
 // PID DEFINITIONS
 //pid settings and gains
-double left_val, right_val, left_setpoint, right_setpoint, left_ouput, right_output;
+double left_val, right_val, left_setpoint, right_setpoint, left_output, right_output;
 const static int OUTPUT_MIN = -255;
 const static int OUTPUT_MAX = 255;
 const static int KP = .12;
 const static int KI = .0003;
 const static int KD = 0;
 // creating left and right control loops
-AutoPID left_pid(&left_val, &left_setpoint, &left_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
-AutoPID right_pid(&right_val, &right_setpoint, &right_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
+AutoPID leftPid(&left_val, &left_setpoint, &left_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
+AutoPID rightPid(&right_val, &right_setpoint, &right_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
 
 
 void setup() {
   // sets starting encoder position to zero
-  left_enc.write(0);
-  right_enc.write(0);
+  leftEnc.write(0);
+  rightEnc.write(0);
 
   // sets motor pins as outputs
-//  pinMode(LEFTM1, OUTPUT);
-//  pinMode(LEFTM2, OUTPUT);
-//  pinMode(RIGHTM1, OUTPUT);
-//  pinMode(RIGHTM2, OUTPUT);
-  lm1.attach(LEFTM1);
-  lm2.attach(LEFTM2);
-  rm1.attach(RIGHTM1);
-  rm2.attach(RIGHTM2);
+  pinMode(LEFTDIR, OUTPUT);
+  pinMode(LEFTPWM, OUTPUT);
+  pinMode(RIGHTDIR, OUTPUT);
+  pinMode(RIGHTPWM, OUTPUT);
   
   myServo.attach(SERVOPIN); // attach servo to pin
   draw(false); // has pen not drawing by default
 
   //if temperature is more than 5 mm below or above setpoint, OUTPUT will be set to min or max respectively
-  myPID.setBangBang(5);
+  leftPid.setBangBang(5);
+  rightPid.setBangBang(5);
   //set PID update interval to 10ms
-  myPID.setTimeStep(10);
+  leftPid.setTimeStep(10);
+  rightPid.setTimeStep(10);
 }
 
 void loop() {
   draw(true);
-  set_motor(lm1, lm2, 20);
-  set_motor(rm1, rm2, 20);
+  set_motor(LEFTDIR, LEFTPWM, 200);
+  set_motor(RIGHTDIR, RIGHTPWM, 80);
 }
 
 
@@ -91,13 +85,14 @@ void go_to_pos(float lm, float rm) {
   right_setpoint = rm;
 
   while (true) {
-    left_val = read_encoder(left_enc);
-    right_val = read_encoder(right_enc);
+    left_val = read_encoder(leftEnc);
+    right_val = read_encoder(rightEnc);
   
-    myPID.run();
+    leftPid.run();
+    rightPid.run();
   
-    set_motor(lm1, lm2, left_output);
-    set_motor(rm1, rm2, right_output);
+    set_motor(LEFTDIR, LEFTPWM, left_output);
+    set_motor(RIGHTDIR, RIGHTPWM, right_output);
 
     if (abs(left_output) < 10 && abs(right_output) < 10) {
       break; 
@@ -105,7 +100,7 @@ void go_to_pos(float lm, float rm) {
   }
 }
 
-void read_encoder(Encoder encoder) { 
+float read_encoder(Encoder encoder) { 
   /*
    * Reads encoder value and converts it to position in mm
    * 
@@ -119,22 +114,23 @@ void read_encoder(Encoder encoder) {
   return value; // in mm
 }
 
-void set_motor(Servo m1, Servo m2, int value) {
+void set_motor(int dir, int pwm, int value) {
   // Turns motor off
-  if (value == 0) {
-    m1.write(value);
-    m2.write(value);
+  digitalWrite(dir, LOW);
+  digitalWrite(pwm, LOW);
+  delay(20);
+
+  // Drives motor backwards
+  if (value < 0) {
+    digitalWrite(dir, LOW);
+    analogWrite(pwm, abs(value));
   }
   // Drives motor forward
   else if (value > 0) {
-    m1.write(abs(value));
-    m2.write(0);
+    digitalWrite(dir, HIGH);
+    analogWrite(pwm, abs(value));
   }
-  // Drives motor backwards
-  else {
-    m1.write(abs(value));
-    m2.write(0);
-  }
+  
 }
 
 void draw(bool yes) {
