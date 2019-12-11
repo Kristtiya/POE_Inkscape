@@ -1,4 +1,4 @@
 <launch>
  <node pkg="test_foo" type="tcp_serv.py" name="tcpsv" args="192.168.33.215 9090"> </node>
- <node pkg="test_foo" type="ctrls1.py" name="mmm" output="screen"> </node>
+ <node pkg="test_foo" type="talker.py" name="mmm" output="screen"> </node>
 </launch>

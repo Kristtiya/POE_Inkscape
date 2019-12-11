@@ -33,7 +33,7 @@ Servo myServo;
 // PID DEFINITIONS
 //pid settings and gains
 double left_setpoint, right_setpoint, left_output, right_output;
-int left_val, right_val;
+double left_val, right_val;
 const static int OUTPUT_MIN = -255;
 const static int OUTPUT_MAX = 255;
 const static int KP = 40;
