@@ -17,8 +17,9 @@ const char* host = "192.168.35.49";
 const uint16_t port = 9090;
 
 const byte numChars = 32;
-char serialData[numChars] = "0.0,0.0>"; // Data from Serial input -> Server
-char clientData[numChars] = "0.0,0.0>"; // Data from client req (Server) -> Serial
+char serialData[numChars] = "0.0,0.0,0.0>"; // Data from Serial input -> Server
+char clientData[numChars] = "0.0,0.0,1.0>"; // Data from client req (Server) -> Serial
+char failData[numChars] = "2.0,2.0,2.0>"; // Data if failed
 static byte ndx = 0;
 char rc;
 char endMarker = '>';
@@ -57,7 +58,7 @@ void loop() {
 //  client.stop();
   pushServer();
   pushSerial();
-  delay(3000); // execute once every 3 seconds, don't flood remote service
+//  delay(30); // execute once every 3 seconds, don't flood remote service
 }
 
 void pushServer() {
@@ -71,7 +72,7 @@ void pushServer() {
     c.print(">");
   }
   else {
-    c.print(clientData);
+    c.print(failData);
     c.print(">");
   }
 

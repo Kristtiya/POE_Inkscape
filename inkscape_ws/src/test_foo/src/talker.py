@@ -28,7 +28,7 @@ class Johnny:
             #     counter = (counter + 1) % 100
 
             # # epos = ','.join(list(map(str,[x,y,time])))
-            dpos = ','.join(list(map(str,[0,0,0])))
+            dpos = ','.join(list(map(str,[100,100,0])))
             rospy.loginfo(dpos)
             # self.pub_e.publish(epos)
             self.pub_d.publish(dpos)

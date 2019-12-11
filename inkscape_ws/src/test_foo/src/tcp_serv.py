@@ -41,11 +41,14 @@ class SockPuppet:
     def mysend(self, msg, conn):
         msglen = len(msg)
         totalsent = 0
+        # print("I'm in a sending mode")
         while totalsent < msglen:
+            # print("Entered sending")
             sent = conn.send(msg[totalsent:])
             if sent == 0:
                 raise RuntimeError("Socket connection broken")
             totalsent = totalsent + sent
+            # print("sent stuff")
 
     def myreceive(self, conn):
         msg = ''
@@ -59,16 +62,22 @@ class SockPuppet:
             if marker != -1:
                 msg = msg + recv[:marker]
                 done = True
+                # print("Received stuff")
             else:
                 msg = msg + recv
         return msg
 
     def run(self, msg_out):
         conn, addr = self.sock.accept()
+        print("Got connection from ", addr)
         try:
             self.msg_in = self.myreceive(conn)
+            # print("Gonna send")
             self.mysend(msg_out, conn)
         except RuntimeError as e:
+            print(str(e))
+            pass
+        except Exception as e:
             print(str(e))
             pass
         finally:
@@ -83,8 +92,8 @@ class RicketyROS:
         self.pup = SockPuppet()
         self.usingRos = True if rospy is not None else False
         # Initialize each message. These won't publish if unset.
-        self.enc_des = "-1.0,0.0>"
-        self.enc_curr = "0.0,0.0"
+        self.enc_des = "0.0,0.0,1.0>"
+        self.enc_curr = "0.0,0.0,0.0"
 
         if self.usingRos:
             rospy.init_node('repeater', anonymous=True)
@@ -102,19 +111,21 @@ class RicketyROS:
             while not rospy.is_shutdown():
                 self.enc_curr = self.pup.run(self.enc_des)
                 self.pub_enc_curr.publish(self.enc_curr)
+                print("Des vals: ", self.enc_des)
+                print("Curr vals: ", self.enc_curr)
                 self.r.sleep()
         except KeyboardInterrupt:
             print("Detected keyboard interrupt, exiting")
             self.pup.shutdown(1)
 
     def _cb(self, msg):
-        self.enc_des = msg
+        self.enc_des = msg.data
 
 if __name__ == '__main__':
     rar = RicketyROS()
 
     # Optionally grab inputs from CL
-    host = '192.168.33.215'
+    host = '192.168.35.49'
     port = 9090
     sys.argv = rospy.myargv(argv=sys.argv)
     if len(sys.argv) >= 3:
