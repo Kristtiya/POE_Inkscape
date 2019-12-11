@@ -32,8 +32,8 @@ class RallentandoROS():
     def run(self):
         rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
-            pos = ','.join(list(map(str,[self.e_L, self.e_R])))
-            # pos = pos+'>'
+            pos = ','.join(list(map(str,[self.e_L, self.e_R, self.des_vals[2]])))
+            pos = pos+'>'
             self.pub.publish(pos)
             rate.sleep()
 
@@ -73,8 +73,10 @@ class RallentandoROS():
         p_R = v + w*self.d/2
         # rospy.loginfo("PV: %s", [p_L, p_R])
         # Convert to encoder values
-        self.e_L = p_L*self.reduction/self.circumference+self.enc_vals[0]
-        self.e_R = p_R*self.reduction/self.circumference+self.enc_vals[1]
+        # self.e_L = p_L*self.reduction/self.circumference+self.enc_vals[0]
+        # self.e_R = p_R*self.reduction/self.circumference+self.enc_vals[1]
+        self.e_L = p_L + self.enc_vals[0]
+        self.e_R = p_R + self.enc_vals[1]
 
         rospy.loginfo("TE: %s", [self.e_L, self.e_R])
         # rospy.loginfo("-----")

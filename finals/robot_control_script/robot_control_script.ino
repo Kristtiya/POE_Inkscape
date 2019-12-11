@@ -32,7 +32,8 @@ Servo myServo;
 
 // PID DEFINITIONS
 //pid settings and gains
-double left_val, right_val, left_setpoint, right_setpoint, left_output, right_output;
+double left_setpoint, right_setpoint, left_output, right_output;
+int left_val, right_val;
 const static int OUTPUT_MIN = -255;
 const static int OUTPUT_MAX = 255;
 const static int KP = 40;
@@ -41,6 +42,17 @@ const static int KD = 0;
 // creating left and right control loops
 AutoPID leftPid(&left_val, &left_setpoint, &left_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 AutoPID rightPid(&right_val, &right_setpoint, &right_output, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
+
+// WiFi Connection Params
+const unsigned int writeInterval = 50; // write interval (in ms)
+float tcVals[5] = {-1,-1,0,0,0};
+const byte numChars = 32;
+char inputData[numChars];
+static byte ndx = 0;
+char endMarker = '>';
+char rc;
+int numCount = 0;
+unsigned long timeout = millis();
 
 void setup() {
   // sets starting encoder position to zero
@@ -62,7 +74,7 @@ void setup() {
   //set PID update interval to 10ms
   leftPid.setTimeStep(10);
   rightPid.setTimeStep(10);
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 
@@ -78,53 +90,62 @@ void loop() {
 //  Serial.print("  ||  Right Encoder: ");
 //  Serial.println(read_encoder(rightEnc));
 //  go_to_pos(80, 80);
-  left_setpoint = 1;
-  right_setpoint = 1;
-  
-  left_val = read_encoder(leftEnc);
-  right_val = read_encoder(rightEnc);
-    
-  leftPid.run();
-  rightPid.run();
+//  left_setpoint = 1;
+//  right_setpoint = 1;
+//  
+//  left_val = read_encoder(leftEnc);
+//  right_val = read_encoder(rightEnc);
+//    
+//  leftPid.run();
+//  rightPid.run();
+//
+////  Serial.print("left: ");
+////  Serial.print(left_output);
+////  Serial.print("  val: ");
+////  Serial.print(left_val);
+////  Serial.print("  ||  right: ");
+////  Serial.print(right_output);
+////  Serial.print("  val: ");
+////  Serial.println(right_val);
+//  set_motor(LEFTDIR, LEFTPWM, left_output);
+//  set_motor(RIGHTDIR, RIGHTPWM, right_output);
 
-  Serial.print("left: ");
-  Serial.print(left_output);
-  Serial.print("  val: ");
-  Serial.print(left_val);
-  Serial.print("  ||  right: ");
-  Serial.print(right_output);
-  Serial.print("  val: ");
-  Serial.println(right_val);
-  set_motor(LEFTDIR, LEFTPWM, left_output);
-  set_motor(RIGHTDIR, RIGHTPWM, right_output);
+  recvNums();
+  go_to_pos();
 }
 
-bool go_to_pos(float lm, float rm) {
+bool go_to_pos() {
   /* 
    * Pass in desired encoder values and motors will go until position is hit
    * 
    * lm: float which contains desired left wheel position
    * rm: float which contains desired right wheel position
    */
-  left_setpoint = lm;  // updates setpoint in PID object
-  right_setpoint = rm;
+  left_setpoint = tcVals[0];  // updates setpoint in PID object
+  right_setpoint = tcVals[1];
 
-  while (true) {
-    left_val = read_encoder(leftEnc);
-    right_val = read_encoder(rightEnc);
-  
-    leftPid.run();
-    rightPid.run();
-
-    set_motor(LEFTDIR, LEFTPWM, left_output);
-    set_motor(RIGHTDIR, RIGHTPWM, right_output);
-
-    if (abs(left_output-lm) < 5 && abs(right_output-rm) < 5) {
-      set_motor(LEFTDIR, LEFTPWM, 0);
-      set_motor(RIGHTDIR, RIGHTPWM, 0);
-      return true;
-    }
+  if (tcVals[2] == 0) {
+    draw(true);
   }
+  else {
+    draw(false);
+  }
+
+  left_val = read_encoder(leftEnc);
+  right_val = read_encoder(rightEnc);
+
+  leftPid.run();
+  rightPid.run();
+
+  set_motor(LEFTDIR, LEFTPWM, left_output);
+  set_motor(RIGHTDIR, RIGHTPWM, right_output);
+
+  if (abs(left_output-tcVals[0]) < 5 && abs(right_output-tcVals[1]) < 5) {
+    set_motor(LEFTDIR, LEFTPWM, 0);
+    set_motor(RIGHTDIR, RIGHTPWM, 0);
+    return true;
+  }
+  return false;
 }
 
 int read_encoder(Encoder encoder) { 
@@ -168,3 +189,57 @@ void draw(bool yes) {
   }
   myServo.write(val);
 }
+
+void recvNums() {
+  timeout = millis();
+  while (Serial.available() == 0) {
+    if (millis() - timeout > 1000) {
+      return;
+    }
+  }
+  while (Serial.available()) {
+    rc = Serial.read();
+    if (rc != endMarker) {
+      if (rc == ',') {
+        tcVals[numCount] = atof(inputData);
+        ndx = -1;
+        numCount++;
+      }
+      else {
+        inputData[ndx] = rc;
+      }
+      ndx++;
+      if (ndx >= numChars) {
+        ndx = numChars - 1;
+      }
+    }
+    else {
+      tcVals[numCount] = atof(inputData);
+      inputData[ndx] = '\0'; // terminate the string
+      ndx = 0;
+      numCount = 0;
+
+      pushData();
+      return;
+    }
+  }
+
+  tcVals[numCount] = atof(inputData);
+  inputData[ndx] = '\0'; // terminate the string
+  ndx = 0;
+  numCount = 0;
+
+  pushData();
+  return;
+}
+
+void pushData() {
+  unsigned long tt = millis();
+  Serial.print(left_val);
+  Serial.print(",");
+  Serial.print(right_val);
+  Serial.print(",");
+  Serial.print(tt);
+  Serial.print(">");
+}
+
