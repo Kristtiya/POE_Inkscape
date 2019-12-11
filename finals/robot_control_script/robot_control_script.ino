@@ -57,11 +57,13 @@ float tcVals[5] = {0,0,1.0,0,0};
 const byte numChars = 32;
 char inputData[numChars];
 static byte ndx = 0;
+char startMarker = '<';
 char endMarker = '>';
 char rc;
 int numCount = 0;
 unsigned long timeout = millis();
-bool move_made = true;;
+static bool rip = false;
+bool move_made = true;
 
 void setup() {
   // sets starting encoder position to zero
@@ -98,7 +100,6 @@ void loop() {
 
   if (move_made){
     recvNums();
-    pushData();
   }
 
   move_made = go_to_pos();
@@ -209,30 +210,36 @@ void recvNums() {
       return;
     }
   }
+  rip = false;
   while (Serial.available()) {
     rc = Serial.read();
-    if (rc != endMarker) {
-      if (rc == ',') {
-        tcVals[numCount] = atof(inputData);
-        ndx = -1;
-        numCount++;
+    if (rip == true) {
+      if (rc != endMarker) {
+        if (rc == ',') {
+          tcVals[numCount] = atof(inputData);
+          ndx = -1;
+          numCount++;
+        }
+        else {
+          inputData[ndx] = rc;
+        }
+        ndx++;
+        if (ndx >= numChars) {
+          ndx = numChars - 1;
+        }
       }
       else {
-        inputData[ndx] = rc;
-      }
-      ndx++;
-      if (ndx >= numChars) {
-        ndx = numChars - 1;
+        tcVals[numCount] = atof(inputData);
+        inputData[ndx] = '\0'; // terminate the string
+        ndx = 0;
+        numCount = 0;
+  
+        pushData();
+        return;
       }
     }
-    else {
-      tcVals[numCount] = atof(inputData);
-      inputData[ndx] = '\0'; // terminate the string
-      ndx = 0;
-      numCount = 0;
-
-      pushData();
-      return;
+    else if (rc == startMarker) {
+      rip = true;
     }
   }
 
@@ -247,6 +254,7 @@ void recvNums() {
 
 void pushData() {
   unsigned long tt = millis();
+  Serial.print("<");
   Serial.print(left_val);
   Serial.print(",");
   Serial.print(right_val);
