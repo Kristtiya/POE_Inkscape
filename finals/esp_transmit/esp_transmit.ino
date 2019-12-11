@@ -22,9 +22,11 @@ char clientData[numChars] = "0.0,0.0,1.0>"; // Data from client req (Server) -> 
 char failData[numChars] = "2.0,2.0,2.0>"; // Data if failed
 static byte ndx = 0;
 char rc;
+char startMarker = '<';
 char endMarker = '>';
 unsigned long timeout = millis();
 bool zoops = false;
+static bool rip = false;
 
 void setup() {
   Serial.begin(115200);
@@ -68,10 +70,12 @@ void pushServer() {
   }
 
   if (zoops) {
+    c.print("<");
     c.print(serialData);
     c.print(">");
   }
   else {
+    c.print("<");
     c.print(failData);
     c.print(">");
   }
@@ -85,20 +89,26 @@ void pushServer() {
       }
     }
 
+    rip = false;
     while (c.available()) {
       rc = static_cast<char>(c.read());
-      if (rc != endMarker) {
-        clientData[ndx] = rc;
-        ndx++;
-        if (ndx >= numChars) {
-          ndx = numChars - 1;
+      if (rip == true) {
+        if (rc != endMarker) {
+          clientData[ndx] = rc;
+          ndx++;
+          if (ndx >= numChars) {
+            ndx = numChars - 1;
+          }
+        }
+        else {
+          clientData[ndx] = '\0'; // terminate the string
+          ndx = 0;
+          c.stop();
+          return;
         }
       }
-      else {
-        clientData[ndx] = '\0'; // terminate the string
-        ndx = 0;
-        c.stop();
-        return;
+      else if (rc == startMarker) {
+        rip = true;
       }
     }
   
@@ -110,6 +120,7 @@ void pushServer() {
 }
 
 void pushSerial() {
+  Serial.print("<");
   Serial.print(clientData);
   Serial.print(">");
 
@@ -121,20 +132,26 @@ void pushSerial() {
     }
   }
 
+  rip = false;
   while (Serial.available()) {
     rc = Serial.read();
-    if (rc != endMarker) {
-      serialData[ndx] = rc;
-      ndx++;
-      if (ndx >= numChars) {
-        ndx = numChars - 1;
+    if (rip == true) {
+      if (rc != endMarker) {
+        serialData[ndx] = rc;
+        ndx++;
+        if (ndx >= numChars) {
+          ndx = numChars - 1;
+        }
+      }
+      else {
+        serialData[ndx] = '\0'; // terminate the string
+        ndx = 0;
+        zoops = true;
+        return;
       }
     }
-    else {
-      serialData[ndx] = '\0'; // terminate the string
-      ndx = 0;
-      zoops = true;
-      return;
+    else if (rc == startMarker) {
+      rip = true;
     }
   }
 
