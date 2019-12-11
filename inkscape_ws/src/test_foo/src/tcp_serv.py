@@ -54,17 +54,27 @@ class SockPuppet:
         msg = ''
         recv = 'nope'
         done = False
+        started = False
         while not done:
             recv = conn.recv(1024)
-            marker = recv.find('>')
+            smarker = recv.find('<')
+            emarker = recv.find('>')
+            print(recv)
+            print(smarker)
             if recv == '':
                 raise RuntimeError("Socket connection broken")
-            if marker != -1:
-                msg = msg + recv[:marker]
-                done = True
-                # print("Received stuff")
-            else:
-                msg = msg + recv
+            if smarker != -1:
+                started = True
+            if started == True:
+                if smarker != -1 and emarker != -1:
+                    msg = msg + recv[smarker+1:emarker]
+                    done = True
+                elif emarker != -1:
+                    msg = msg + recv[:emarker]
+                    done = True
+                    # print("Received stuff")
+                else:
+                    msg = msg + recv
         return msg
 
     def run(self, msg_out):
