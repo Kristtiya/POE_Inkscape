@@ -1,4 +1,5 @@
 <launch>
+	<!-- Launch file for testing the TCP connection. -->
  <node pkg="test_foo" type="tcp_serv.py" name="tcpsv" args="192.168.35.49 9090" output="screen"> </node>
  <node pkg="test_foo" type="talker.py" name="mmm"> </node>
 </launch>
