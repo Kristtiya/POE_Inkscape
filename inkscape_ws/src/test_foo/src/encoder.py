@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 # license removed for brevity
+"""
+ROS node that converts desired X,Y position into desired encoder position. Currently doesn't do final conversion, and only finds mm to travel per wheel.
 
-## We need to add the following:
-# Change the current usage of self.ro[1] to actual theta, and not heading
-# Make a separate variable for heading
-# Publish the true heading and (x,y) position
-# i.e. -> /curr_pos/robot1 -> "$r,$theta,$x,$y,$heading"
-# Update the way the path_planner parses the msg to match
+@author Shashank Swaminathan
+"""
 import rospy
 from std_msgs.msg import String
 import math
 
 class RallentandoROS():
+    """
+    Class to encapsulate encoding work.
+    """
     def __init__(self):
+        """
+        Init function. Initializes all relevant constants and arrays, as well as ROS Publishers and Subscribers.
+        """
         self.curr_vals = [0,0,0,0,0]
         self.enc_vals = [0,0,0]
         self.des_vals = [0,0]
@@ -30,6 +34,9 @@ class RallentandoROS():
         rospy.Subscriber("/des_pos/robot1", String, self.det_new_pos)
 
     def run(self):
+        """
+        Looping section of code. While not shutdown, continually publish data of the following form - [pos: encoder left, pos: encoder right, isNewEdge?]
+        """
         rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
             pos = ','.join(list(map(str,[self.e_L, self.e_R, self.des_vals[2]])))
@@ -38,14 +45,29 @@ class RallentandoROS():
             rate.sleep()
 
     def store_curr_pos(self, msg):
+        """
+        Callback function that parses out the current X,Y position of the robot.
+
+        :param msg: ROS Message.
+        """
         self.curr_vals = list(map(float, msg.data.split(',')))
         rospy.loginfo("CV: %s", [self.curr_vals[2], self.curr_vals[3]])
 
     def store_enc_vals(self, msg):
+        """
+        Callback function that parses out the current encoder values.
+
+        :param msg: ROS Message.
+        """
         self.enc_vals = list(map(float, msg.data.split(',')))
         rospy.loginfo("EV: %s", [self.enc_vals[0], self.enc_vals[1]])
 
     def det_new_pos(self, msg):
+        """
+        Callback function that parses out the desired X,Y position of the robot. Then, it converts those into desired encoder positions based on the current X,Y position and current encoder values. Uses the same math as the decoder.py file, but in reverse.
+
+        :param msg: ROS Message.
+        """
         self.des_vals = list(map(float, msg.data.split(',')))
 
         delta_dist = [self.des_vals[0]-self.curr_vals[2],
@@ -82,6 +104,13 @@ class RallentandoROS():
         # rospy.loginfo("-----")
 
     def _headfind(self, dh):
+        """
+        Find the most optimal heading change (so that the robot doesn't turn more than 90 degrees.
+
+        :param dh: Desired heading.
+
+        :returns: Tuple of: Updated heading, sign of velocity
+        """
         a=abs(dh)
         s=math.copysign(1,dh)
         f=1
@@ -97,6 +126,7 @@ class RallentandoROS():
         f = f * -1
         return s*a, f
 
+# Main method
 if __name__ == '__main__':
     new_encs = RallentandoROS()
     new_encs.run()

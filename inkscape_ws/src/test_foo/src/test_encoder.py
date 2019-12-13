@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # license removed for brevity
+"""
+ROS Node meant to simulate the encoder movement of a ROS turtlesim robot. Only somewhat functional, and was never fully developed.
+
+@author Shashank Swaminathan
+"""
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist

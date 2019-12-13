@@ -1,31 +1,24 @@
 #!/usr/bin/env python
+"""
+ROS node that runs a TCP server to connect to the ESP connected to the Arduino. Parses out received data, and publishes it to ROS Master.
 
+@author Shashank Swaminathan
+"""
 import socket
 import rospy
 from std_msgs.msg import String
 import sys
 
-# HOST = '192.168.33.215'  # Standard loopback interface address (localhost)
-# PORT = 9090        # Port to listen on (non-privileged ports are > 1023)
-
-# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# s.bind((HOST, PORT))
-# s.listen()
-# while True:
-#     conn, addr = s.accept()
-#     with conn:
-#         print('Connected by', addr)
-#         data = conn.recv(1024)
-#         print(repr(data))
-#         if not data:
-#             break
-#         conn.sendall(b"1,0>");
-
 class SockPuppet:
-    ''' Snagged from some docs online
-    https://docs.python.org/2/howto/sockets.html
-    '''
+    """
+    Class to encapsulate TCP work. Snagged from some docs online: https://docs.python.org/2/howto/sockets.html.
+    """
     def __init__(self, sock=None):
+        """
+        Init function. Creates INET socket.
+
+        :param sock: Optional pre-prepared socket to use, instead of setting up one. If left None, the init function will create its own.
+        """
         if sock is None:
             self.sock = socket.socket(
                 socket.AF_INET, socket.SOCK_STREAM)
@@ -35,10 +28,22 @@ class SockPuppet:
         self.msg_in = None
 
     def connect(self, host, port):
+        """
+        Binds socket to port.
+
+        :param host: Host IP
+        :param port: Port to bind to on host
+        """
         self.sock.bind((host, port))
         self.sock.listen(1)
 
     def mysend(self, msg, conn):
+        """
+        Sends specified message to the client at the connection specified.
+
+        :param msg: Message to send to client.
+        :param conn: Connection object formed after connecting to client.
+        """
         msglen = len(msg)
         totalsent = 0
         # print("I'm in a sending mode")
@@ -51,6 +56,11 @@ class SockPuppet:
             # print("sent stuff")
 
     def myreceive(self, conn):
+        """
+        Receives data from the client. Does start and end marker checks to ensure that data hasn't been lost or corruped.
+
+        :param conn: Connection object formed after connecting to client.
+        """
         msg = ''
         recv = 'nope'
         done = False
@@ -78,6 +88,13 @@ class SockPuppet:
         return msg
 
     def run(self, msg_out):
+        """
+        Main connection handler. Accepts connections from clients, receives data from client, and then sends response back to client.
+
+        :param msg_out: Message to send to the client.
+
+        :returns: Data received from the client.
+        """
         conn, addr = self.sock.accept()
         print("Got connection from ", addr)
         try:
@@ -95,10 +112,23 @@ class SockPuppet:
             return self.msg_in
 
     def shutdown(self,num):
+        """
+        The server must end, like all good things.
+
+        :param num: Shutdown flag.
+        """
         self.sock.shutdown(num)
 
 class RicketyROS:
+    """
+    Class handling ROS connection stuff for data received from sockets.
+    """
     def __init__(self, sock=None):
+        """
+        Init function. Initializes internal buffers, and related ROS objects.
+
+        :param sock: Optional pre-prepared socket to use, instead of setting up one. If left None, the init function will create its own.
+        """
         self.pup = SockPuppet()
         self.usingRos = True if rospy is not None else False
         # Initialize each message. These won't publish if unset.
@@ -116,6 +146,12 @@ class RicketyROS:
             self.r = rospy.Rate(10)
 
     def run(self, host, port):
+        """
+        Looping section of the code. While not shutdown, connect to robot and send/grab data. Afterwards, post received data to ROS master.
+
+        :param host: Host IP
+        :param port: Port to bind to on host.
+        """
         try:
             self.pup.connect(host, port)
             while not rospy.is_shutdown():
@@ -129,6 +165,11 @@ class RicketyROS:
             self.pup.shutdown(1)
 
     def _cb(self, msg):
+        """
+        Callback function to store data from ROS master to send to the robot.
+
+        :param msg: ROS Message.
+        """
         self.enc_des = msg.data
 
 if __name__ == '__main__':

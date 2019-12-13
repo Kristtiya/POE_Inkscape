@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # license removed for brevity
+"""
+Test ROS Node to chatter and produce values we want for testing. Currently setup to give us desired encoder positions.
+
+@author Shashank Swaminathan
+"""
 import rospy
 from std_msgs.msg import String
 import numpy as np
