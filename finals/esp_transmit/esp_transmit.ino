@@ -1,21 +1,37 @@
 /*
-    This sketch establishes a TCP connection to a "quote of the day" service.
-    It sends a "hello" message, and then prints received data.
+    This sketch is for an ESP8266 chip.
+    It establishes a TCP connection to a computer at the host/port parameters specified.
+    It communicates to the computer via the socket, and to the Arduino via the Serial connection.
+    It uses two buffers to store data from the Arduino and computer, and operates in two steps:
+      1.a First, it sends data from the Arduino data buffer to the computer server
+      1.b It stores the response in the server buffer.
+      2.a Now, it sends data from the server buffer to the Arduino.
+      2.b It will store the response from the Arduino in the Arduino buffer
+      When either the server or the Arduino doesn't respond, it will not update the buffer.
+
+    This sketch will operate as fast as the chip's clock and operations will allow it.
+    That means the delay in communications comes from the speed of the TCP comms.
+
+    @author: Shashank Swaminathan
+    This sketch is based off the WiFiClient example in the ESP8266 library.
 */
 
 #include <ESP8266WiFi.h>
 
+// Use ifndef to catch if network information is already defined
 #ifndef STASSID
-#define STASSID "OLIN-DEVICES"
-#define STAPSK  "Design&Fabric8"
+#define STASSID "*********"
+#define STAPSK  "*********"
 #endif
 
+// Set up network, host, and other related TCP information
 const char* ssid     = STASSID;
 const char* password = STAPSK;
 
 const char* host = "192.168.35.49";
 const uint16_t port = 9090;
 
+// Initialize interal buffers and other variables involved in reading from external buffers
 const byte numChars = 32;
 char serialData[numChars] = "0.0,0.0,0.0>"; // Data from Serial input -> Server
 char clientData[numChars] = "0.0,0.0,1.0>"; // Data from client req (Server) -> Serial
@@ -29,6 +45,7 @@ bool zoops = false;
 static bool rip = false;
 
 void setup() {
+  // Begin serial
   Serial.begin(115200);
   /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
      would try to act as both a client and an access-point and could cause
@@ -36,39 +53,25 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
+  // Loop here till connected
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
   }
 }
 
 void loop() {
-  // Use WiFiClient class to create TCP connections
-//  WiFiClient client;
-//  if (!client.connect(host, port)) {
-//    Serial.println("15.0,15.0>");
-//    delay(3000);
-//    return;
-//  }
-
-  // This will send a string to the server
-//  if (client.connected()) {
-//    echoSerial(client);
-//  }
-//
-//  echoServer(client);
-//
-//  client.stop();
-  pushServer();
-  pushSerial();
-//  delay(30); // execute once every 3 seconds, don't flood remote service
+  pushServer(); // Server comm part of code
+  pushSerial(); // Serial comm part of code
 }
 
 void pushServer() {
+  // Bind to host
   WiFiClient c;
   if (!c.connect(host, port)) {
-    return;
+    return; // If failed, stop trying
   }
 
+  // If flag is true, then proceed as normal. Otherwise, send 'failed' message
   if (zoops) {
     c.print("<");
     c.print(serialData);
@@ -80,6 +83,9 @@ void pushServer() {
     c.print(">");
   }
 
+  /* Wait for server to prepare response
+   * If the wait time exceeds 5 seconds, timeout and return
+   */ 
   timeout = millis();
   if (c.connected()) {
     while (c.available() == 0) {
@@ -89,6 +95,10 @@ void pushServer() {
       }
     }
 
+    /* Code is motivated from online forum named Serial Input Basics
+     * Read it here: https://forum.arduino.cc/index.php?topic=396450.0
+     * It will explain how this code functions.
+     */
     rip = false;
     while (c.available()) {
       rc = static_cast<char>(c.read());
@@ -103,7 +113,7 @@ void pushServer() {
         else {
           clientData[ndx] = '\0'; // terminate the string
           ndx = 0;
-          c.stop();
+          c.stop(); // Always make sure to terminate connections
           return;
         }
       }
@@ -114,16 +124,20 @@ void pushServer() {
   
     clientData[ndx] = '\0'; // terminate the string
     ndx = 0;
-    c.stop();
+    c.stop(); // Always make sure to terminate connections
     return;
   }
 }
 
 void pushSerial() {
+  // Send whatever is on internal server data buffer to Arduino
   Serial.print("<");
   Serial.print(clientData);
   Serial.print(">");
 
+  /* Wait for Arduino to prepare response
+   * If the wait time exceeds 1 second, timeout and return
+   */ 
   timeout = millis();
   while (Serial.available() == 0) {
     if (millis() - timeout > 1000) {
@@ -132,6 +146,10 @@ void pushSerial() {
     }
   }
 
+  /* Code is motivated from online forum named Serial Input Basics
+   * Read it here: https://forum.arduino.cc/index.php?topic=396450.0
+   * It will explain how this code functions.
+   */
   rip = false;
   while (Serial.available()) {
     rc = Serial.read();
@@ -161,75 +179,3 @@ void pushSerial() {
   ndx = 0;
   return;
 }
-
-//void echoServer(WiFiClient c) {
-//  static byte ndx = 0;
-//  char rc;
-//  int numCount = 0;
-//  unsigned long timeout = millis();
-//  while (c.available() == 0) {
-//    if (millis() - timeout > 5000) {
-//      Serial.println("0.0,0.0>");
-//      c.stop();
-//      delay(3000);
-//      return;
-//    }
-//  }
-//
-//  zoops = true;
-//
-//  while (c.available()) {
-//    rc = static_cast<char>(c.read());
-//    clientData[ndx] = rc;
-//    ndx++;
-//    if (ndx >= numChars) {
-//      ndx = numChars - 1;
-//    }
-//  }
-//
-//  clientData[ndx] = '\0'; // terminate the string
-//  ndx = 0;
-//  Serial.print(clientData);
-//  Serial.println(">");
-//}
-//
-//void echoSerial(WiFiClient c) {
-//  static byte ndx = 0;
-//  char rc;
-//  int numCount = 0;
-//  unsigned long timeout = millis();
-//  while (Serial.available() == 0) {
-//    if (millis() - timeout > 1000) {
-//      if (zoops) {
-//        c.println("15.0,15.0>");
-//      }
-//      else {
-//        c.print(serialData);
-//        c.println(">");
-//      }
-//      return;
-//    }
-//  }
-//
-//  while (Serial.available()) {
-//    rc = Serial.read();
-//    if (rc != endMarker) {
-//      serialData[ndx] = rc;
-//      ndx++;
-//      if (ndx >= numChars) {
-//        ndx = numChars - 1;
-//      }
-//    }
-//    else {
-//      serialData[ndx] = '\0'; // terminate the string
-//      ndx = 0;
-//    }
-//  }
-//  if (zoops) {
-//    c.println("15.0,15.0>");
-//  }
-//  else {
-//    c.print(serialData);
-//    c.println(">");
-//  }
-//}

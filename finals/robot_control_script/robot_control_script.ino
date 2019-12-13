@@ -197,6 +197,16 @@ void draw(bool yes) {
   myServo.write(val);
 }
 
+/* Receives and sends values to the ESP8266
+ *   And therefore the computer
+ * Code is motivated from online forum named Serial Input Basics
+ * Read it here: https://forum.arduino.cc/index.php?topic=396450.0
+ * It will explain the basics of how this code functions.
+ * Additional part of code:
+ *   While receiving data from ESP, it also parses out numbers
+ *   It delimits successive numbers via commas
+ *   The parsed out values are stored in an array
+ */
 void recvNums() {
   timeout = millis();
   while (Serial.available() == 0) {
@@ -226,7 +236,7 @@ void recvNums() {
       ndx = 0;
       numCount = 0;
 
-      pushData();
+      pushData(); // After receiving data, send response
       return;
     }
   }
@@ -236,11 +246,13 @@ void recvNums() {
   ndx = 0;
   numCount = 0;
 
-  pushData();
+  pushData(); // After receiving data, send response
   return;
 }
 
 void pushData() {
+  // Send necessary values to ESP
+  // Format: comma-separated numbers in a string
   unsigned long tt = millis();
   Serial.print(left_val);
   Serial.print(",");
