@@ -38,10 +38,10 @@ double left_setpoint, right_setpoint, left_output, right_output;
 double left_val, right_val;
 const static int OUTPUT_MIN = -250;
 const static int OUTPUT_MAX = 250;
-const static int LP = 6;
+const static int LP = 4;
 const static int LI = 0.001;
 const static int LD = 60;
-const static int RP = 6;
+const static int RP = 4;
 const static int RI = 0.001;
 const static int RD = 80;
 // creating left and right control loops
@@ -57,13 +57,11 @@ float tcVals[5] = {0,0,1.0,0,0};
 const byte numChars = 32;
 char inputData[numChars];
 static byte ndx = 0;
-char startMarker = '<';
 char endMarker = '>';
 char rc;
 int numCount = 0;
 unsigned long timeout = millis();
-static bool rip = false;
-bool move_made = true;
+bool move_made = true;;
 
 void setup() {
   // sets starting encoder position to zero
@@ -77,89 +75,57 @@ void setup() {
   pinMode(RIGHTPWM, OUTPUT);
   
   myServo.attach(SERVOPIN); // attach servo to pin
-  draw(false); // has pen not drawing by default
+  draw(true); // has pen not drawing by default
 
   //set PID update interval to 10ms
   leftPid.setTimeStep(1);
   rightPid.setTimeStep(1);
   Serial.begin(115200);
 
-  delay(1000);
+  delay(30000);
 }
 
 
 void loop() {
-//  Serial.print("left: ");
-//  Serial.print(left_output);
-//  Serial.print("  val: ");
-//  Serial.print(left_val);
-//  Serial.print("  ||  right: ");
-//  Serial.print(right_output);
-//  Serial.print("  val: ");
-//  Serial.println(right_val);
-
-  if (move_made){
-    recvNums();
-  }
-
-  move_made = go_to_pos();
+  draw(true);
+  draw_square();
   
 }
 
 bool go_to_pos() {
   /* 
    * Pass in desired encoder values and motors will go until position is hit
-   * 
-   * lm: float which contains desired left wheel position
-   * rm: float which contains desired right wheel position
    */
   left_setpoint = tcVals[0];  // updates setpoint in PID object
   right_setpoint = tcVals[1];
-//  left_setpoint = 100;  // updates setpoint in PID object
-//  right_setpoint = 100;
 
+  // sees if it should be drawing
   if (tcVals[2] == 0) {
     draw(true);
   }
   else {
-    draw(false);
+    draw(true);
   }
 
+  // updates encoder values
   left_val = read_encoder(leftEnc);
   right_val = read_encoder(rightEnc);
 
+  // runs PID loop to get motor values
   leftPid.run();
   rightPid.run();
 
+  // sets motors to speed
   set_motor(LEFTDIR, LEFTPWM, left_output);
   set_motor(RIGHTDIR, RIGHTPWM, right_output);
 
-  if (leftPid.atSetPoint(5) && leftPid.atSetPoint(5)) {
+  // returns after it is within 2 cm of desired position
+  if (leftPid.atSetPoint(20) && leftPid.atSetPoint(20)) {
     return true;
   }
   return false;
 
 }
-
-//void biggitybiggity() {
-//  left_setpoint = 1000;
-//  right_setpoint = 1000;
-//
-//  left_val = read_encoder(leftEnc);
-//  right_val = read_encoder(rightEnc);
-//
-//  signL = sgn(left_setpoint - left_val);
-//  signR = sgn(right_setpoint - right_val);
-//
-//  if (abs(left_setpoint - left_val) < threshold) {
-//   signL = 0;
-//  }
-//  if (abs(right_setpoint - right_val) < threshold) {
-//   signR = 0;
-//  }
-//  set_motor(LEFTDIR, LEFTPWM, 100*signL);
-//  set_motor(RIGHTDIR, RIGHTPWM, 100*signR);
-//}
 
 int read_encoder(Encoder encoder) { 
   /*
@@ -194,7 +160,35 @@ void set_motor(int dir, int pwm, int value) {
   
 }
 
+void draw_square(){
+  tcVals[2] = 0;
+  for (int i = 0; i<10000; i++){
+    tcVals[0] += 200;
+    tcVals[1] += 200;
+    while (true){
+      if (go_to_pos()) {
+        break;
+      }
+    }
+
+    tcVals[0] -= 80;
+    tcVals[1] += 90;
+    while (true){
+      if (go_to_pos()) {
+        break;
+      }
+    }
+  }
+  tcVals[2] = 1;
+}
+
 void draw(bool yes) {
+  /*
+   * Controls drawing servo
+   * 
+   * yes: bool
+   */
+   
   // pen gets pushed DOWN
   int val = UP;
   if (yes) {
@@ -210,36 +204,30 @@ void recvNums() {
       return;
     }
   }
-  rip = false;
   while (Serial.available()) {
     rc = Serial.read();
-    if (rip == true) {
-      if (rc != endMarker) {
-        if (rc == ',') {
-          tcVals[numCount] = atof(inputData);
-          ndx = -1;
-          numCount++;
-        }
-        else {
-          inputData[ndx] = rc;
-        }
-        ndx++;
-        if (ndx >= numChars) {
-          ndx = numChars - 1;
-        }
+    if (rc != endMarker) {
+      if (rc == ',') {
+        tcVals[numCount] = atof(inputData);
+        ndx = -1;
+        numCount++;
       }
       else {
-        tcVals[numCount] = atof(inputData);
-        inputData[ndx] = '\0'; // terminate the string
-        ndx = 0;
-        numCount = 0;
-  
-        pushData();
-        return;
+        inputData[ndx] = rc;
+      }
+      ndx++;
+      if (ndx >= numChars) {
+        ndx = numChars - 1;
       }
     }
-    else if (rc == startMarker) {
-      rip = true;
+    else {
+      tcVals[numCount] = atof(inputData);
+      inputData[ndx] = '\0'; // terminate the string
+      ndx = 0;
+      numCount = 0;
+
+      pushData();
+      return;
     }
   }
 
@@ -254,7 +242,6 @@ void recvNums() {
 
 void pushData() {
   unsigned long tt = millis();
-  Serial.print("<");
   Serial.print(left_val);
   Serial.print(",");
   Serial.print(right_val);
